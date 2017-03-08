@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# git-deb-pkg --- 
+# git-deb-pkg ---
 # Copyright © 2010-2012 Sebastien Gross <seb•ɑƬ•chezwam•ɖɵʈ•org>
 # Last changed: 2016-02-09 14:46:52
 
@@ -20,9 +20,10 @@ changelog_update=1
 # git variables
 upstream_branch=$(git config --get deb-pkg.upstream)
 if test -z "${upstream_branch}"; then
-    upstream_branch=$(git rev-parse --verify upstream >/dev/null 2>&1 && \
+	  upstream_branch=$(git rev-parse --verify upstream >/dev/null 2>&1 && \
 			  echo -n "upstream" || echo -n "master")
 fi
+
 debian_branch=$(git config --get deb-pkg.debian || echo -n "debian")
 revision_scheme=$(git config --get deb-pkg.revision-scheme || echo -n 's/^v\(.\+\)$/\1/;s/[-]/./g')
 templates_dir=$(git config --get deb-pkg.templates-dir || echo -n "/usr/share/git-deb-pkg/templates")
@@ -58,92 +59,93 @@ deb_version=
 deb_version_full=
 
 function _warn() {
-    if test -z "${quiet}"; then
-        echo -e "\033[0;33;40m*\033[0m $@"
-    fi
+	if test -z "${quiet}"; then
+	  echo -e "\033[0;33;40m*\033[0m $@"
+	fi
 }
 
 function _msg() {
-    if test -z "${quiet}"; then
-        echo -e "\033[0;32;40m*\033[0m $@"
-    fi
+	if test -z "${quiet}"; then
+	  echo -e "\033[0;32;40m*\033[0m $@"
+	fi
 }
 
 function _err() {
-    if test -z "${quiet}"; then
-        echo -e "\033[0;31;40m*\033[0m $@"
-    fi
+	if test -z "${quiet}"; then
+	  echo -e "\033[0;31;40m*\033[0m $@"
+	fi
 }
 
 function die() {
-    _err "Fatal error"
-    echo "$@" >&2
-    exit 1
+	_err "Fatal error"
+	echo "$@" >&2
+	exit 1
 }
 
 # Parse git version
 function parse_git_version() {
-    test -n "${stamp_parse_git_version}" && return
-    # parse version from git tags
-    # if no tag is found then use date as version
-    v_git_version=$(git describe ${upstream_branch} --tags 2> /dev/null \
-	|| date +%Y%m%d)
-    v_git_patchlevel=$(echo "${v_git_version}" | \
-        sed -n 's/^.*-\([0-9]\+\)-g[0-9a-f]\+$/\1/p')
-    # remove git patchlevel and commit id
-    v_git_version=$(echo "${v_git_version}" \
-	| sed "s/^\(.*\)-${v_git_patchlevel}-g[0-9a-f]\+$/\1/")
-    v_git_commit=$(git log --pretty="format:%h" -n1 ${upstream_branch})
+	test -n "${stamp_parse_git_version}" && return
+	# parse version from git tags
+	# if no tag is found then use date as version
+	v_git_version=$(git describe ${upstream_branch} --tags 2> /dev/null \
+	  || date +%Y%m%d)
+	v_git_patchlevel=$(echo "${v_git_version}" | \
+	  sed -n 's/^.*-\([0-9]\+\)-g[0-9a-f]\+$/\1/p')
+	# remove git patchlevel and commit id
+	v_git_version=$(echo "${v_git_version}" \
+	  | sed "s/^\(.*\)-${v_git_patchlevel}-g[0-9a-f]\+$/\1/")
+	v_git_commit=$(git log --pretty="format:%h" -n1 ${upstream_branch})
 
-    # compute ustream version
-    v_upstream="${v_git_version}"
-    if ! test -z "${revision_scheme}"; then
-        v_upstream=$(echo "${v_upstream}" | sed "${revision_scheme}")
-    fi
+	# compute ustream version
+	v_upstream="${v_git_version}"
+	if ! test -z "${revision_scheme}"; then
+	    v_upstream=$(echo "${v_upstream}" | sed "${revision_scheme}")
+	fi
 
-    stamp_parse_git_version=1
+	stamp_parse_git_version=1
 }
 
 # Parse debian changelog
 function parse_debian_changelog() {
-    test -n "${stamp_parse_debian_changelog}" && return
-    # this prevent from switching to the debian branch when fetching info.
-    local changelog=
-    if test -r debian/changelog; then
-	changelog=$(dpkg-parsechangelog)
-    else
-	changelog=$(git cat-file blob $(git ls-tree \
+	test -n "${stamp_parse_debian_changelog}" && return
+	# this prevent from switching to the debian branch when fetching info.
+	local changelog=
+	if test -r debian/changelog; then
+	  changelog=$(dpkg-parsechangelog)
+	else
+	  changelog=$(git cat-file blob $(git ls-tree \
 	    $(git rev-parse ${debian_branch}) debian/changelog | \
 	    awk '{print $3}') | dpkg-parsechangelog -l-)
-    fi
+	fi
 
-    deb_version=$(echo "${changelog}" | sed -n 's/^Version: \(.*\)/\1/p')
-    deb_src_package=$(echo "${changelog}" | sed -n 's/^Source: \(.*\)/\1/p')
-    deb_distribution=$(echo "${changelog}" | sed -n 's/^Distribution: \(.*\)/\1/p')
-    deb_urgency=$(echo "${changelog}" | sed -n 's/^Urgency: \(.*\)/\1/p')
-    local deb_full_maintainer=$(echo "${changelog}" | sed -n 's/^Maintainer: \(.*\)/\1/p')
-    deb_email=$(echo "${deb_full_maintainer}" | sed -n 's/^.*<\([^>]\+\)>.*$/\1/p')
-    deb_maintainer=$(echo "${deb_full_maintainer}" | sed -n 's/^\(.\+\) <.\+>.*$/\1/p')
-    stamp_parse_debian_changelog=1
+	deb_version=$(echo "${changelog}" | sed -n 's/^Version: \(.*\)/\1/p')
+	deb_src_package=$(echo "${changelog}" | sed -n 's/^Source: \(.*\)/\1/p')
+	deb_distribution=$(echo "${changelog}" | sed -n 's/^Distribution: \(.*\)/\1/p')
+	deb_urgency=$(echo "${changelog}" | sed -n 's/^Urgency: \(.*\)/\1/p')
+
+	local deb_full_maintainer=$(echo "${changelog}" | sed -n 's/^Maintainer: \(.*\)/\1/p')
+	deb_email=$(echo "${deb_full_maintainer}" | sed -n 's/^.*<\([^>]\+\)>.*$/\1/p')
+	deb_maintainer=$(echo "${deb_full_maintainer}" | sed -n 's/^\(.\+\) <.\+>.*$/\1/p')
+	stamp_parse_debian_changelog=1
 }
 
 # Compute debian version
 function compute_debian_version() {
-    test -n "${stamp_compute_debian_version}" && return
-    
-    parse_git_version
-    parse_debian_changelog
+	test -n "${stamp_compute_debian_version}" && return
 
-    # parse version from debian changelog local
-    local _debian_version=$(perl -MDpkg::Version -MData::Dumper -e \
-        "\$v=new Dpkg::Version('${deb_version}'); print Dumper \$v")
+	parse_git_version
+	parse_debian_changelog
 
-    local v_debian_epoch=$(echo "${_debian_version}" | \
-        sed -n "s/^[[:space:]]\+'epoch' => '\([^']\+\)'.*\$/\1/p")
-    local v_debian_version=$(echo "${_debian_version}" | \
-        sed -n "s/^[[:space:]]\+'version' => '\([^']\+\)'.*\$/\1/p")
-    local v_debian_revision=$(echo "${_debian_version}" | \
-        sed -n "s/^[[:space:]]\+'revision' => '\([^']\+\)'.*\$/\1/p")
+	# parse version from debian changelog local
+	local _debian_version=$(perl -MDpkg::Version -MData::Dumper -e \
+	    "\$v=new Dpkg::Version('${deb_version}'); print Dumper \$v")
+
+	local v_debian_epoch=$(echo "${_debian_version}" | \
+	    sed -n "s/^[[:space:]]\+'epoch' => '\([^']\+\)'.*\$/\1/p")
+	local v_debian_version=$(echo "${_debian_version}" | \
+	    sed -n "s/^[[:space:]]\+'version' => '\([^']\+\)'.*\$/\1/p")
+	local v_debian_revision=$(echo "${_debian_version}" | \
+	    sed -n "s/^[[:space:]]\+'revision' => '\([^']\+\)'.*\$/\1/p")
 
 #     cat<<EOF
 # Debian changelog:
@@ -153,77 +155,77 @@ function compute_debian_version() {
 #   - v_debian_revision: ${v_debian_revision}
 # EOF
 
-    v_package="${v_upstream}"
-    local v_epoch=$(echo "${v_upstream}" | cut -f1 -d.)
+	v_package="${v_upstream}"
+	local v_epoch=$(echo "${v_upstream}" | cut -f1 -d.)
 
-    test -z "${v_git_patchlevel}" || \
-        v_package="${v_package}+git.${v_git_patchlevel}"
+	test -z "${v_git_patchlevel}" || \
+	    v_package="${v_package}+git.${v_git_patchlevel}"
 
-    if test -n "${changelog_update}"; then
-        # update debian revision if needed
-	dpkg --compare-versions "${v_package}" 'eq' "${v_debian_version}"
-	if test $? -eq 0; then
-            v_debian_revision=$((${v_debian_revision} + 1))
+	if test -n "${changelog_update}"; then
+	  # update debian revision if needed
+	  dpkg --compare-versions "${v_package}" 'eq' "${v_debian_version}"
+	  if test $? -eq 0; then
+	    v_debian_revision=$((${v_debian_revision} + 1))
+	  else
+	    v_debian_revision=1
+	  fi
+	  deb_version="${v_package}-${v_debian_revision}"
+	  deb_version_full="${v_epoch}:${v_package}-${v_debian_revision}"
 	else
-            v_debian_revision=1
-	fi
-	deb_version="${v_package}-${v_debian_revision}"
-	deb_version_full="${v_epoch}:${v_package}-${v_debian_revision}"
-    else
-	deb_version="${v_debian_version}-${v_debian_revision}"
-	if test -n "${v_debian_epoch}"; then
+	  deb_version="${v_debian_version}-${v_debian_revision}"
+	  if test -n "${v_debian_epoch}"; then
 	    deb_version="${v_debian_version}-${v_debian_revision}"
 	    deb_version_full="${deb_version}"
-	else
+	  else
 	    deb_version_full="${v_debian_epoch}:${deb_version}"
+	  fi
 	fi
-    fi
 
-    stamp_compute_debian_version=1
+	stamp_compute_debian_version=1
 }
 
 function cmd_set_defaults() {
-    test -n "${stamp_set_defaults}" && return
+	test -n "${stamp_set_defaults}" && return
 
-    # Store some git variables
-    git config --get deb-pkg.scm 2>&1 >/dev/null || git config --add deb-pkg.scm ${scm}
-    git config --get deb-pkg.upstream 2>&1 >/dev/null || git config --add deb-pkg.upstream ${upstream_branch}
-    git config --get deb-pkg.debian 2>&1 >/dev/null || git config --add deb-pkg.debian ${debian_branch}
-    git config --get deb-pkg.revision-scheme 2>&1 >/dev/null || git config --add deb-pkg.revision-scheme ${revision_scheme}
+	# Store some git variables
+	git config --get deb-pkg.scm 2>&1 >/dev/null || git config --add deb-pkg.scm ${scm}
+	git config --get deb-pkg.upstream 2>&1 >/dev/null || git config --add deb-pkg.upstream ${upstream_branch}
+	git config --get deb-pkg.debian 2>&1 >/dev/null || git config --add deb-pkg.debian ${debian_branch}
+	git config --get deb-pkg.revision-scheme 2>&1 >/dev/null || git config --add deb-pkg.revision-scheme ${revision_scheme}
 
-    stamp_set_defaults=1
+	stamp_set_defaults=1
 }
 
 
 # Init debian
 function cmd_init_debian() {
-    test -n "${stamp_init_debian}" && return
+	test -n "${stamp_init_debian}" && return
 
-    build_branch=${debian_branch}-dev
-    _msg "Initializing ${build_branch}"
+	build_branch=${debian_branch}-dev
+	_msg "Initializing ${build_branch}"
 
-    git checkout -b ${debian_branch}-dev ${upstream_branch}
-    
-    parse_git_version
-    local ver=$(echo "${v_git_version}" | sed 's/^[^0-9]\+//')
-    local src=$(basename `pwd`)
+	git checkout -b ${debian_branch}-dev ${upstream_branch}
 
-    mv "../${src}" "../${src}-${ver}"
-    cd "../${src}-${ver}"
+	parse_git_version
+	local ver=$(echo "${v_git_version}" | sed 's/^[^0-9]\+//')
+	local src=$(basename `pwd`)
 
-    DEBFULLNAME="${DEBFULLNAME}" DEBEMAIL="${DEBEMAIL}" \
+	mv "../${src}" "../${src}-${ver}"
+	cd "../${src}-${ver}"
+
+	DEBFULLNAME="${DEBFULLNAME}" DEBEMAIL="${DEBEMAIL}" \
 	dh_make -d -n -s -t "${templates_dir}"
-    for f in '*.ex' '*.EX' dirs docs; do
-	rm -f debian/$f
-    done
+	for f in '*.ex' '*.EX' dirs docs; do
+	  rm -f debian/$f
+	done
 
-    mv "../${src}-${ver}" "../${src}"
-    cd "../${src}"
+	mv "../${src}-${ver}" "../${src}"
+	cd "../${src}"
 
-    cmd_set_defaults
+	cmd_set_defaults
 
-    _msg "Debian environment prepared"
-    cat<<EOF
+	_msg "Debian environment prepared"
+	cat<<EOF
 
 Before going on you should edit:
 
@@ -237,39 +239,39 @@ and if needed:
 
 EOF
 
-    stamp_init_debian=1
+	stamp_init_debian=1
 }
 
 
 # Commit debian
 function cmd_commit_debian() {
-    git branch | grep "^* ${debian_branch}-dev\$" 2>&1 > /dev/null
-    if test $? -eq 0; then
-	git branch | grep "^  ${debian_branch}\$" 2>&1 > /dev/null
+	git branch | grep "^* ${debian_branch}-dev\$" 2>&1 > /dev/null
 	if test $? -eq 0; then
+	  git branch | grep "^  ${debian_branch}\$" 2>&1 > /dev/null
+	  if test $? -eq 0; then
 	    die "${debian_branch} already exists."
+	  fi
+	  git add -- ./debian
+	  git status
+	  git commit -m "Add debian files." -- ./debian
+	  git status
+	  git symbolic-ref HEAD refs/heads/${debian_branch}
+	  rm .git/index
+	  git clean -fdx
+	  git checkout "${debian_branch}-dev" -- ./debian
+	  parse_debian_changelog
+	  git add -- ./debian
+	  git commit --author="${deb_maintainer} <${deb_email}>" \
+	    -m "Add debian files." -- ./debian
+	  git branch -D "${debian_branch}-dev"
 	fi
-	git add -- ./debian
-	git status
-	git commit -m "Add debian files." -- ./debian
-	git status
-	git symbolic-ref HEAD refs/heads/${debian_branch}
-	rm .git/index
-	git clean -fdx
-	git checkout "${debian_branch}-dev" -- ./debian
-	parse_debian_changelog
-	git add -- ./debian
-	git commit --author="${deb_maintainer} <${deb_email}>" \
-            -m "Add debian files." -- ./debian
-	git branch -D "${debian_branch}-dev"
-    fi
 }
 
 
 # Show version
 function cmd_show_version () {
-    compute_debian_version
-    cat <<EOF
+	compute_debian_version
+	cat <<EOF
 Package            : ${deb_src_package}
 
 upstream (branch ${upstream_branch}):
@@ -291,87 +293,87 @@ EOF
 
 # Stash current
 function stash_current() {
-    test -n "${stamp_stash_current}" && return
-    _msg "stashing branch ${current_branch} to ${stash}"
-    git stash save ${stash}
-    stash_id=$(git stash list | \
-	sed -n "s/^\(stash@{[0-9]\+}\): On ${current_branch}: ${stash}\$/\1/p")
-    stamp_stash_current=1
+	test -n "${stamp_stash_current}" && return
+	_msg "stashing branch ${current_branch} to ${stash}"
+	git stash save ${stash}
+	stash_id=$(git stash list | \
+	  sed -n "s/^\(stash@{[0-9]\+}\): On ${current_branch}: ${stash}\$/\1/p")
+	stamp_stash_current=1
 }
 
 # Unstash current
 function unstash_current() {
-    test -n "${stamp_unstash_current}" && return
-    if test -n "${stash_id}"; then
-	_msg "Applying stash ${stash_id}"
-	git stash pop ${stash_id}
-    else
-	_msg "No stash to apply :-)"
-    fi
-    stamp_unstash_current=1
+	test -n "${stamp_unstash_current}" && return
+	if test -n "${stash_id}"; then
+	  _msg "Applying stash ${stash_id}"
+	  git stash pop ${stash_id}
+	else
+	  _msg "No stash to apply :-)"
+	fi
+	stamp_unstash_current=1
 }
 
 # Update upstream
 function cmd_update_upstream() {
-    test -n "${stamp_update_upstream}" && return
-    if test -n "${upstream_update}"; then
-	_msg "Updating ${upstream_branch}"
-	git checkout "${upstream_branch}"
-	case "${scm}" in
+	test -n "${stamp_update_upstream}" && return
+	if test -n "${upstream_update}"; then
+	  _msg "Updating ${upstream_branch}"
+	  git checkout "${upstream_branch}"
+		case "${scm}" in
 	    git) git pull;;
 	    cvs) git cvsimport 2>&1 > /dev/null;;
 	    svn) git svn fetch --all;;
 	    *) die "Unknown SCM ${scm}"
-	esac
-    fi
-    stamp_update_upstream=1
+		esac
+	fi
+	stamp_update_upstream=1
 }
 
 # Update debian changelog
 function update_debian_changelog() {
-    test -n "${stamp_update_debian_changelog}" && return
-    _msg "Updating debian/changelog to version ${deb_version_full}"
-    # Update and auto-commit the debian/changelog
-    DEBFULLNAME="${deb_maintainer}" DEBEMAIL="${deb_email}" \
-	dch --urgency "${deb_urgency}" --distribution "${deb_distribution}" \
-	--newversion="${deb_version_full}" -b \
-        "New automated build from: ${v_git_version} - ${v_git_commit}"
-    stamp_update_debian_changelog=1
+	test -n "${stamp_update_debian_changelog}" && return
+	_msg "Updating debian/changelog to version ${deb_version_full}"
+	# Update and auto-commit the debian/changelog
+	DEBFULLNAME="${deb_maintainer}" DEBEMAIL="${deb_email}" \
+	  dch --urgency "${deb_urgency}" --distribution "${deb_distribution}" \
+	  --newversion="${deb_version_full}" -b \
+	  "New automated build from: ${v_git_version} - ${v_git_commit}"
+	stamp_update_debian_changelog=1
 }
 
 # Update debian branch
 function cmd_update_debian_branch() {
-    if test -n "${stamp_update_debian_branch}"; then
-	update_debian_changelog 
-	return
-    fi
-    compute_debian_version
+	if test -n "${stamp_update_debian_branch}"; then
+	  update_debian_changelog
+	  return
+	fi
+	compute_debian_version
 
-    _msg "Updating ${debian_branch} branch to version ${deb_version_full}"
-    git checkout "${debian_branch}"
+	_msg "Updating ${debian_branch} branch to version ${deb_version_full}"
+	git checkout "${debian_branch}"
 
-    update_debian_changelog
+	update_debian_changelog
 
-    # commit changes
-    local msg=$(cat<<EOF
+	# commit changes
+	local msg=$(cat<<EOF
 Automated build for ${deb_version_full}
 
 Upstream commit-id: ${v_git_commit}
 EOF
-    )
-    git commit --author="${deb_maintainer} <${deb_email}>" \
-        -m "${msg}" debian/changelog
+	)
+	git commit --author="${deb_maintainer} <${deb_email}>" \
+	  -m "${msg}" debian/changelog
 
-    git checkout "${current_branch}"
+	git checkout "${current_branch}"
 
-    stamp_update_debian_branch=1
+	stamp_update_debian_branch=1
 }
 
 # print return
 function print_return() {
-    local st=
-    test -z "${stash_id}" || st="&& git stash pop ${stash_id} "
-    cat<<EOF
+	local st=
+	test -z "${stash_id}" || st="&& git stash pop ${stash_id} "
+	cat<<EOF
 
 To return to ${current_branch} run following commands:
 
@@ -385,212 +387,210 @@ EOF
 
 # Prepare
 function cmd_prepare() {
-    test -n "${stamp_prepare}" && return
-    _msg "Preparing build branch into ${build_branch}"
-    git checkout -b ${build_branch} ${upstream_branch}
-    git checkout ${debian_branch} -- ./debian
+	test -n "${stamp_prepare}" && return
+	_msg "Preparing build branch into ${build_branch}"
+	git checkout -b ${build_branch} ${upstream_branch}
+	git checkout ${debian_branch} -- ./debian
 
-    # Add all other required checkouts
-    for c in $(git config --get deb-pkg.checkout); do
-	b=$(echo ${c} | sed -n 's/^\([^:]\+\)\(:\(.*\)\)\?$/\1/p')
-	f=$(echo ${c} | sed -n 's/^\([^:]\+\)\(:\(.*\)\)\?$/\3/;
-             s/,/ .\//g;s/^/.\//p')
-	_msg "Checking out ${f} from ${b}"
-	git checkout ${b} -- ${f}
-    done
+	# Add all other required checkouts
+	for c in $(git config --get deb-pkg.checkout); do
+	  b=$(echo ${c} | sed -n 's/^\([^:]\+\)\(:\(.*\)\)\?$/\1/p')
+	  f=$(echo ${c} | sed -n 's/^\([^:]\+\)\(:\(.*\)\)\?$/\3/;
+	    s/,/ .\//g;s/^/.\//p')
+	  _msg "Checking out ${f} from ${b}"
+	  git checkout ${b} -- ${f}
+	done
 
-    # Cherry pick some commits
-    for c in $(git config --get deb-pkg.cherrypick); do
-	_msg "Cherry picking ${c}"
-	git cherry-pick -n ${c}
-    done
+	# Cherry pick some commits
+	for c in $(git config --get deb-pkg.cherrypick); do
+	  _msg "Cherry picking ${c}"
+	  git cherry-pick -n ${c}
+	done
 
-    # change the version number in the configure file
-    for f in configure.ac; do
-	test -f $f || continue
-	if ! test -d debian/patches; then
+	# change the version number in the configure file
+	for f in configure.ac; do
+	  test -f $f || continue
+	  if ! test -d debian/patches; then
 	    mkdir -p debian/patches
-	fi
-	sed -i "s/^\(AC_INIT(\[[^]]\+\], *\[\)[^]]\+\(\], *\[[^]]\+\])\)\$/\1${v_git_version} git:${v_git_commit} debian:${deb_version_full}\2/" $f
-	# We generate a patch since quilt raises an error if archive is not
-	# pristine.
-	patch_file=9999-git-deb-pkg-$f.patch
-	git diff $f > debian/patches/$patch_file
-	echo $patch_file >> debian/patches/series
-	git checkout $f
-    done
+	  fi
+	  sed -i "s/^\(AC_INIT(\[[^]]\+\], *\[\)[^]]\+\(\], *\[[^]]\+\])\)\$/\1${v_git_version} git:${v_git_commit} debian:${deb_version_full}\2/" $f
+	  # We generate a patch since quilt raises an error if archive is not
+	  # pristine.
+	  patch_file=9999-git-deb-pkg-$f.patch
+	  git diff $f > debian/patches/$patch_file
+	  echo $patch_file >> debian/patches/series
+	  git checkout $f
+	done
 
-    update_debian_changelog
+	update_debian_changelog
 
-
-    stamp_prepare=1
+	stamp_prepare=1
 }
 
 # Prepare orig
 function cmd_prepare_orig() {
-    test -n "${stamp_prepare_orig}" && return
-    parse_git_version
-    compute_debian_version
-    
-    _msg "Preparition upstream original archive from ${upstream_branch}"
-    git archive --format=tar --prefix="$(basename `pwd`).orig/" \
-	${upstream_branch} | gzip > "../$(basename `pwd`)_${v_package}.orig.tar.gz"
-    stamp_prepare_orig=1
+	test -n "${stamp_prepare_orig}" && return
+	parse_git_version
+	compute_debian_version
+
+	_msg "Preparition upstream original archive from ${upstream_branch}"
+	git archive --format=tar --prefix="$(basename `pwd`).orig/" \
+	  ${upstream_branch} | gzip > "../$(basename `pwd`)_${v_package}.orig.tar.gz"
+	stamp_prepare_orig=1
 }
 
 function cleanup_build() {
-    test -n "${stamp_cleanup_build}" && return
-    # Cleanup build branch
-    _msg "Returning to branch ${current_branch}"
-    debuild -d clean
-    # remove debian auto patches
-    rm -rf debian/patches/debian-changes-*
-    git reset --hard
-    rm -f debian/patches/9999-git-deb-pkg*.patch
-    git checkout ${current_branch}
-    git branch -D ${build_branch}
-    if test -n "${stamp_prepare_orig}"; then
-	_msg "Cleaning original upstram archive from $(basename `pwd`).orig/"
-	rm -rf "$(basename `pwd`).orig/"
-    fi
-    stamp_cleanup_build=1
+	test -n "${stamp_cleanup_build}" && return
+	# Cleanup build branch
+	_msg "Returning to branch ${current_branch}"
+	debuild -d clean
+	# remove debian auto patches
+	rm -rf debian/patches/debian-changes-*
+	git reset --hard
+	rm -f debian/patches/9999-git-deb-pkg*.patch
+	git checkout ${current_branch}
+	git branch -D ${build_branch}
+	if test -n "${stamp_prepare_orig}"; then
+	  _msg "Cleaning original upstram archive from $(basename `pwd`).orig/"
+	  rm -rf "$(basename `pwd`).orig/"
+	fi
+	stamp_cleanup_build=1
 }
 
 
 
 # Build
 function cmd_build() {
-    test -n "${stamp_build}" && return
-    cmd_update_debian_branch
-    compute_debian_version
-    cmd_prepare
-    update_debian_changelog
-    cmd_prepare_orig
+	test -n "${stamp_build}" && return
+	cmd_update_debian_branch
+	compute_debian_version
+	cmd_prepare
+	update_debian_changelog
+	cmd_prepare_orig
 
-    _msg "Building ${deb_src_package} ${deb_version_full}"
-    debuild -I.git -i'\.git/'
+	_msg "Building ${deb_src_package} ${deb_version_full}"
+	debuild -I.git -i'\.git/'
 
-    # Check build is OK
-    sed -n 's/^ \([0-9a-f]\{64\}\) [0-9]\+ \(.\+\)$/\1  ..\/\2/p' \
-	../${deb_src_package}_${deb_version}_*.changes | sha256sum -c
-    if test $? -ne 0; then
-	_err "/!\\ BUILD FAILED /!\\"
-	cat<<EOF
+	# Check build is OK
+	sed -n 's/^ \([0-9a-f]\{64\}\) [0-9]\+ \(.\+\)$/\1  ..\/\2/p' \
+	  ../${deb_src_package}_${deb_version}_*.changes | sha256sum -c
+	if test $? -ne 0; then
+	  _err "/!\\ BUILD FAILED /!\\"
+	  cat<<EOF
 
 You are now in branch ${build_branch} and you can debug your
 build from here.
 Good luck ;-)
 
 EOF
-	print_return
-	die "/!\\ BUILD FAILED /!\\"
-    fi
+	  print_return
+	  die "/!\\ BUILD FAILED /!\\"
+	fi
 
-    cleanup_build
-    _msg "Build complete ;-)"
-    stamp_build=1
+	cleanup_build
+	_msg "Build complete ;-)"
+	stamp_build=1
 }
 
 
 
 # Build
 function cmd_source() {
-    test -n "${stamp_source}" && return
-    cmd_update_debian_branch
-    compute_debian_version
-    cmd_prepare
-    update_debian_changelog
-    cmd_prepare_orig
+	test -n "${stamp_source}" && return
+	cmd_update_debian_branch
+	compute_debian_version
+	cmd_prepare
+	update_debian_changelog
+	cmd_prepare_orig
 
-    _msg "Building ${deb_src_package} ${deb_version_full}"
-    debuild -I.git -i'\.git/' -S
+	_msg "Building ${deb_src_package} ${deb_version_full}"
+	debuild -I.git -i'\.git/' -S
 
-    cleanup_build
-    _msg "Source build complete ;-)"
-    stamp_source=1
+	cleanup_build
+	_msg "Source build complete ;-)"
+	stamp_source=1
 }
 
 
 
 
 function usage() {
-    exit_code=${1:-1}
-    cat <<EOF
+	exit_code=${1:-1}
+	cat <<EOF
 $(basename $0) Version ${VERSION}
 Copyright © 2010-2012 Sébastien Gross <seb•ɑƬ•chezwam•ɖɵʈ•org>
-    
+
 $(basename $0) [ options ]
-    
+
 Options:
 
-  -t|--templates-dir          DIR  Debian template directory to use
-                                   (Default: ${templates_dir}).
-  -q|--quite                       Run in verbose mode.
-  -h|--help                        This help screen.
+	-t|--templates-dir          DIR  Debian template directory to use
+	                                 (Default: ${templates_dir}).
+	-q|--quite                       Run in verbose mode.
+	-h|--help                        This help screen.
 
 Git Options:
 
-  -u|--upstream-branch     BRANCH   Upstream branch 
-                                    (Default: ${upstream_branch})
-  -d|--debian-branch       BRANCH   Debian branch 
-                                    (Default: ${debian_branch})
-  -U|--no-upstream-update           Do not update upstream branch.
-  -C|--no-changelog-update          Do not update debian changelog.
+	-u|--upstream-branch     BRANCH   Upstream branch
+	                                  (Default: ${upstream_branch})
+	-d|--debian-branch       BRANCH   Debian branch
+	                                  (Default: ${debian_branch})
+	-U|--no-upstream-update           Do not update upstream branch.
+	-C|--no-changelog-update          Do not update debian changelog.
 
 
 Commands:
 
-  init-debian                       Init debian directory.
-  set-defaults                      Set default values.
-  commit-debian                     Commit the debian directory.
-  build                             Build debian package.
-  source                            Only build source packages.
-  show-version                      Show all versions for the package.
-  update-upstream                   Update upstream branch.
-  prepare                           Prepare building environment.
-  prepare-orig                      Prepare upstream orig archive.
+	init-debian                       Init debian directory.
+	set-defaults                      Set default values.
+	commit-debian                     Commit the debian directory.
+	build                             Build debian package.
+	source                            Only build source packages.
+	show-version                      Show all versions for the package.
+	update-upstream                   Update upstream branch.
+	prepare                           Prepare building environment.
+	prepare-orig                      Prepare upstream orig archive.
 
 EOF
-    exit ${exit_code}
+	exit ${exit_code}
 }
 
 
 command=
 while test $# != 0 && test -z "${command}"; do
-    case "$1" in
-	init-debian|set-defaults|build|source|commit-debian|show-version|update-upstream|prepare|prepare-orig)
+	case "$1" in
+	  init-debian|set-defaults|build|source|commit-debian|show-version|update-upstream|prepare|prepare-orig)
 	    command=$1;;
-	-t|--templates-dir)
+	  -t|--templates-dir)
 	    test -z "$2" && die "Need a parameter for $1."
 	    templates_dir=$2
 	    shift
 	    ;;
-	-v|--verbose) verbose=1 ;;
-	-h|--help) usage 0 ;;
-	-u|--upstream-branch)
+	  -v|--verbose) verbose=1 ;;
+	  -h|--help) usage 0 ;;
+	  -u|--upstream-branch)
 	    test -z "$2" && die "Need a parameter for $1."
 	    upstream_branch=$2
 	    shift
 	    ;;
-	-U|--no-upstream-update) upstream_update= ;;
-	-C|--no-changelog-update)
+	  -U|--no-upstream-update) upstream_update= ;;
+	  -C|--no-changelog-update)
 	    changelog_update=
 	    stamp_update_debian_branch=1;;
-	-d|--debian-branch)
+	  -d|--debian-branch)
 	    test -z "$2" && die "Need a parameter for $1."
 	    debian_branch=$2
 	    shift
 	    ;;
-	--) shift; break ;;
-	-*|*) usage ;;
-    esac
-    shift
+	  --) shift; break ;;
+	  -*|*) usage ;;
+	esac
+	shift
 done
 
 
-
 if test -z "${command}"; then
-    command="show-version"
+	command="show-version"
 fi
 
 stash_current
@@ -600,9 +600,9 @@ command=$(echo ${command} | sed 's/-/_/g')
 cmd_${command} ${@}
 
 case ${command} in
-    prepare|init_debian)
-	_msg "Build tree prepared"
-	cat <<EOF
+	prepare|init_debian)
+	  _msg "Build tree prepared"
+	  cat <<EOF
 
 You are now in branch ${build_branch} and you can debug your
 build from here.
@@ -611,9 +611,9 @@ run "debuild --no-tgz-check -I.git -i'\.git/'" to build package
 
 Good luck!
 EOF
-	print_return
-	;;
-    *) unstash_current;;
+	  print_return
+	  ;;
+	*) unstash_current;;
 esac
 
 
