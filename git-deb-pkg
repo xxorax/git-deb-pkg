@@ -215,6 +215,9 @@ function cmd_init_debian() {
 
 	DEBFULLNAME="${DEBFULLNAME}" DEBEMAIL="${DEBEMAIL}" \
 	dh_make -d -n -s -t "${templates_dir}"
+	# @todo possible to bypass the packeagename/version by doing this :
+	#dh_make -d -n -s -t "${templates_dir}" --packagename ${src} ${ver}
+	# instead of moving the dir
 	for f in '*.ex' '*.EX' dirs docs; do
 	  rm -f debian/$f
 	done
