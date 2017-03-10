@@ -298,7 +298,8 @@ EOF
 function stash_current() {
 	test -n "${stamp_stash_current}" && return
 	_msg "stashing branch ${current_branch} to ${stash}"
-	git stash save ${stash}
+	# stash even the untracked files to avoid errors with dpkg-source (debuild)
+	git stash save ${stash} -u
 	stash_id=$(git stash list | \
 	  sed -n "s/^\(stash@{[0-9]\+}\): On ${current_branch}: ${stash}\$/\1/p")
 	stamp_stash_current=1
