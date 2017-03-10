@@ -434,8 +434,11 @@ function cmd_prepare_orig() {
 	compute_debian_version
 
 	_msg "Preparition upstream original archive from ${upstream_branch}"
-	git archive --format=tar --prefix="$(basename `pwd`).orig/" \
-	  ${upstream_branch} | gzip > "../$(basename `pwd`)_${v_package}.orig.tar.gz"
+
+	# Using the src package name (from the changelog) instead of the directory name
+	git archive --format=tar --prefix="${deb_src_package}.orig/" \
+	  ${upstream_branch} | gzip > "../${deb_src_package}_${v_package}.orig.tar.gz"
+
 	stamp_prepare_orig=1
 }
 
